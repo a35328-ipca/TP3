@@ -1,0 +1,179 @@
+/* --- DESIGN SYSTEM & CSS VARIABLES --- */
+:root {
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-title: 'Outfit', var(--font-sans);
+
+  /* Color Palette - Default Dark Theme */
+  --bg-primary: #0b0f19;
+  --bg-secondary: #131a2e;
+  --bg-tertiary: #1e2942;
+  --bg-card: rgba(19, 26, 46, 0.7);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.4);
+  
+  --accent: #6366f1; /* Indigo */
+  --accent-hover: #4f46e5;
+  --accent-glow: rgba(99, 102, 241, 0.25);
+  
+  /* Financial States */
+  --success: #10b981; /* Emerald Green */
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-glow: rgba(16, 185, 129, 0.2);
+
+  --danger: #ef4444; /* Rose Red */
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --danger-glow: rgba(239, 68, 68, 0.2);
+  
+  --neutral-zero: #94a3b8;
+  
+  /* Calculated Highlights (Blue/Green as required) */
+  --calc-blue: #0ea5e9; /* Sky Blue */
+  --calc-blue-bg: rgba(14, 165, 233, 0.04);
+  --calc-blue-header: rgba(14, 165, 233, 0.1);
+  
+  --calc-green-bg: rgba(16, 185, 129, 0.06);
+  --calc-green-header: rgba(16, 185, 129, 0.15);
+
+  /* FX & Borders */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.4);
+  --glass-blur: blur(16px);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light Theme Variables */
+body.light-theme {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-focus: rgba(99, 102, 241, 0.6);
+  
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-glow: rgba(79, 70, 229, 0.15);
+  
+  --success-bg: rgba(16, 185, 129, 0.08);
+  --danger-bg: rgba(239, 68, 68, 0.08);
+  
+  --calc-blue-bg: rgba(14, 165, 233, 0.03);
+  --calc-blue-header: rgba(14, 165, 233, 0.08);
+  
+  --calc-green-bg: rgba(16, 185, 129, 0.04);
+  --calc-green-header: rgba(16, 185, 129, 0.08);
+  
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* --- RESET & BASIC STYLES --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Smooth Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* --- KEYFRAME ANIMATIONS --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--accent-glow); }
+  50% { box-shadow: 0 0 15px var(--accent-glow); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-spin-fast {
+  animation: spin 0.8s linear infinite;
+}
+
+/* --- GLOBAL UTILITIES --- */
+.text-success {
+  color: var(--success) !important;
+}
+
+.text-danger {
+  color: var(--danger) !important;
+}
+
+.text-neutral {
+  color: var(--text-primary) !important;
+}
+
+.text-muted-custom {
+  color: var(--text-muted) !important;
+}
+
+.bg-success-subtle {
+  background-color: var(--success-bg);
+}
+
+.bg-danger-subtle {
+  background-color: var(--danger-bg);
+}
+
+/* Form controls reset */
+input, select, textarea, button {
+  font-family: inherit;
+}
