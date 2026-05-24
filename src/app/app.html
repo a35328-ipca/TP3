@@ -1,436 +1,436 @@
-<!-- Main Layout Wrapper -->
-<div class="app-container">
-  
-  <!-- Header / Navigation Bar -->
-  <header class="navbar animate-fade-in">
-    <div class="logo-area">
-      <span class="logo-icon">📊</span>
-      <div>
-        <h1 id="app-heading-main">StockFolio</h1>
-        <span class="subtitle">Monitorização de Carteira de Ações</span>
+<!-- Creative Layout Wrapper (Sidebar + Main) -->
+<div class="app-layout">
+
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="sidebar animate-slide-in">
+    <div class="brand">
+      <span class="logo-icon">💼</span>
+      <div class="brand-text">
+        <h1 id="app-heading-main">Gabriel Ações</h1>
+        <span class="subtitle">Fintech Dashboard</span>
       </div>
     </div>
-    
-    <div class="nav-controls">
-      <!-- Demo Mode indicator -->
-      <span class="badge" [ngClass]="stockApi.isDemoMode() ? 'badge-demo' : 'badge-api'" (click)="openSettingsModal()">
-        {{ stockApi.isDemoMode() ? 'Modo Simulação' : 'API Real' }}
-      </span>
 
-      <!-- Refresh Button -->
-      <button id="btn-refresh" class="btn-icon" (click)="triggerRefresh()" [disabled]="portfolioService.isLoading()" title="Atualizar Cotações">
-        <span class="icon" [ngClass]="{'animate-spin-fast': portfolioService.isLoading()}">🔄</span>
-      </button>
-
-      <!-- Settings Button -->
-      <button id="btn-settings" class="btn-icon" (click)="openSettingsModal()" title="Configurações">
-        <span class="icon">⚙️</span>
-      </button>
-
-      <!-- Theme Toggle -->
-      <button id="btn-theme" class="btn-icon" (click)="toggleTheme()" title="Alternar Tema">
-        <span class="icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
-      </button>
+    <div class="sidebar-summary">
+      <small class="text-muted-custom">Saldo da Carteira</small>
+      <div class="huge-balance">{{ portfolioService.totals().valorAtual | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+      </div>
+      <div class="return-badge"
+        [ngClass]="{'text-success': portfolioService.totals().variacaoTotal >= 0, 'text-danger': portfolioService.totals().variacaoTotal < 0}">
+        {{ portfolioService.totals().variacaoTotal > 0 ? '+' : '' }}{{ portfolioService.totals().variacaoTotal |
+        number:'1.2-2':'pt-PT' }}% Todo o Tempo
+      </div>
     </div>
-  </header>
 
-  <!-- Main Content Area -->
+    <nav class="sidebar-nav">
+      <button id="btn-add-asset" class="btn-sidebar btn-add" (click)="openAddModal()">
+        ✚ Novo Ativo
+      </button>
+
+      <label for="file-upload" class="btn-sidebar" id="btn-import-label">
+        📥 Importar Portfólio
+        <input id="file-upload" type="file" accept=".json" (change)="onFileSelected($event)" style="display: none;">
+      </label>
+
+      <button id="btn-export" class="btn-sidebar" (click)="handleExport()">
+        📤 Exportar Dados
+      </button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <button id="btn-settings" class="btn-sidebar-icon" (click)="openSettingsModal()">⚙️ Configurações</button>
+      <button id="btn-theme" class="btn-sidebar-icon" (click)="toggleTheme()">{{ isLightTheme() ? '🌙 Modo Escuro' : '☀️
+        Modo Claro' }}</button>
+
+      <div class="api-status" (click)="openSettingsModal()">
+        Sinal: <span [ngClass]="stockApi.isDemoMode() ? 'text-warning' : 'text-success'">{{ stockApi.isDemoMode() ?
+          'Simulação Local' : 'API Real Conectada' }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT AREA -->
   <main class="main-content">
-    
-    <!-- Toast Notification Banner -->
+
+    <!-- TOP HEADER -->
+    <header class="top-header animate-fade-in">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="input-search" type="text" placeholder="Pesquisar por Ticker ou Empresa..." [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)">
+      </div>
+
+      <div class="top-controls">
+        <button id="btn-refresh" class="btn-top" (click)="triggerRefresh()" [disabled]="portfolioService.isLoading()"
+          title="Forçar Atualização">
+          <span class="icon" [ngClass]="{'animate-spin-fast': portfolioService.isLoading()}">🔄</span>
+          <span>Sincronizar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Banners -->
     <div *ngIf="notification() as toast" class="toast-notification" [ngClass]="'toast-' + toast.type">
       <span class="toast-icon">{{ toast.type === 'success' ? '✓' : '⚠' }}</span>
       <span class="toast-message">{{ toast.message }}</span>
     </div>
 
-    <!-- Alert banner when key is missing and demo mode is off -->
     <div *ngIf="!stockApi.isDemoMode() && !stockApi.apiKey()" class="alert-banner animate-fade-in" id="api-key-warning">
       <span class="alert-icon">⚠</span>
       <div class="alert-content">
-        <strong>Chave de API em falta!</strong> Insira a sua chave do Finnhub nas configurações para aceder a cotações em tempo real. A utilizar valores simulados temporariamente.
+        <strong>Chave API Finnhub em falta!</strong> A utilizar valores de fallback.
       </div>
       <button class="btn btn-sm btn-outline" (click)="openSettingsModal()">Configurar</button>
     </div>
 
-    <!-- Dashboard Grid (Stats & Distribution) -->
-    <section class="dashboard-grid animate-fade-in">
-      
-      <!-- Stat Card 1: Total Invested -->
-      <div class="stat-card">
-        <div class="stat-header">
-          <span class="stat-title">Valor de Aquisição</span>
-          <span class="stat-icon">💰</span>
-        </div>
-        <div class="stat-value" id="stat-total-invested">
-          {{ portfolioService.totals().totalInvestido | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-        </div>
-        <div class="stat-footer text-muted-custom">
-          Custo total de compra dos ativos
-        </div>
+    <div *ngIf="portfolioService.backendError()" class="alert-banner alert-banner-warn animate-fade-in"
+      id="backend-warning">
+      <span class="alert-icon">🗄️</span>
+      <div class="alert-content">
+        <strong>Base de Dados Offline!</strong> A usar armazenamento local temporário. Inicie o backend com
+        <code>npm start</code> na pasta backend.
       </div>
+    </div>
 
-      <!-- Stat Card 2: Current Value -->
-      <div class="stat-card">
-        <div class="stat-header">
-          <span class="stat-title">Valor Atual</span>
-          <span class="stat-icon">📈</span>
-        </div>
-        <div class="stat-value" id="stat-current-value">
-          {{ portfolioService.totals().valorAtual | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-        </div>
-        <div class="stat-footer text-muted-custom">
-          Avaliação atual da carteira
-        </div>
-      </div>
+    <!-- SPLIT DASHBOARD LAYOUT -->
+    <div class="dashboard-split animate-fade-in">
 
-      <!-- Stat Card 3: Return / Profit -->
-      <div class="stat-card">
-        <div class="stat-header">
-          <span class="stat-title">Retorno Total</span>
-          <span class="stat-icon">🔄</span>
-        </div>
-        <div class="stat-value" [ngClass]="{
-          'text-success': portfolioService.totals().variacaoTotal > 0,
-          'text-danger': portfolioService.totals().variacaoTotal < 0
-        }" id="stat-return-value">
-          {{ portfolioService.totals().variacaoTotal > 0 ? '+' : '' }}{{ portfolioService.totals().variacaoTotal | number:'1.2-2':'pt-PT' }}%
-        </div>
-        <div class="stat-footer">
-          <span [ngClass]="{
-            'text-success': portfolioService.totals().valorAtual - portfolioService.totals().totalInvestido > 0,
-            'text-danger': portfolioService.totals().valorAtual - portfolioService.totals().totalInvestido < 0
-          }">
-            {{ portfolioService.totals().valorAtual - portfolioService.totals().totalInvestido > 0 ? '+' : '' }}
-            {{ (portfolioService.totals().valorAtual - portfolioService.totals().totalInvestido) | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Allocation Card -->
-      <div class="stat-card allocation-card">
-        <div class="stat-header">
-          <span class="stat-title">Distribuição da Carteira</span>
-          <span class="stat-icon">🍰</span>
-        </div>
-        
-        <div class="allocation-bar-wrapper">
-          <!-- Stacked Progress Bar -->
-          <div class="stacked-bar" *ngIf="chartAllocation().length > 0; else noAllocation">
-            <div *ngFor="let item of chartAllocation()" 
-                 [style.width.%]="item.percentage" 
-                 [style.backgroundColor]="item.color"
-                 [title]="item.ticker + ': ' + (item.percentage | number:'1.1-1') + '%'"
-                 class="bar-slice">
-            </div>
-          </div>
-          <ng-template #noAllocation>
-            <div class="empty-bar text-muted-custom">Nenhum ativo para apresentar.</div>
-          </ng-template>
+      <!-- LEFT PANEL: TABLE -->
+      <div class="main-panel">
+        <div class="panel-header">
+          <h2>Posições Abertas</h2>
+          <span class="item-count">{{ filteredAndSortedStocks().length }} ativos</span>
         </div>
 
-        <!-- Legend -->
-        <div class="allocation-legend" *ngIf="chartAllocation().length > 0">
-          <div *ngFor="let item of chartAllocation().slice(0, 4)" class="legend-item">
-            <span class="legend-dot" [style.backgroundColor]="item.color"></span>
-            <span class="legend-label">{{ item.ticker }}</span>
-            <span class="legend-value">{{ item.percentage | number:'1.1-1' }}%</span>
-          </div>
-        </div>
-      </div>
-    </section>
+        <section class="table-container card">
+          <div class="table-scroll">
+            <table id="portfolio-table" class="portfolio-table">
+              <thead>
+                <tr>
+                  <th (click)="changeSort('ticker')" class="sortable" id="th-ticker">
+                    Ticker
+                    <span class="sort-icon" *ngIf="sortField() === 'ticker'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('empresa')" class="sortable" id="th-empresa">
+                    Empresa
+                    <span class="sort-icon" *ngIf="sortField() === 'empresa'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('dataCompra')" class="sortable text-center" id="th-datacompra">
+                    Data da Compra
+                    <span class="sort-icon" *ngIf="sortField() === 'dataCompra'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('quantidade')" class="sortable text-right" id="th-quantidade">
+                    QT
+                    <span class="sort-icon" *ngIf="sortField() === 'quantidade'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('precoCompra')" class="sortable text-right" id="th-precocompra">
+                    PU (Compra)
+                    <span class="sort-icon" *ngIf="sortField() === 'precoCompra'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
 
-    <!-- Actions / Operations Bar -->
-    <section class="actions-bar animate-fade-in">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input id="input-search" type="text" placeholder="Filtrar por Ticker ou Empresa..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)">
-      </div>
-      
-      <div class="action-buttons">
-        <!-- Import JSON file -->
-        <label for="file-upload" class="btn btn-outline" id="btn-import-label">
-          <span>📥 Importar JSON</span>
-          <input id="file-upload" type="file" accept=".json" (change)="onFileSelected($event)" style="display: none;">
-        </label>
-        
-        <!-- Export JSON file -->
-        <button id="btn-export" class="btn btn-outline" (click)="handleExport()">
-          📤 Exportar JSON
-        </button>
+                  <!-- Calculated Columns (Blue Highlighted) -->
+                  <th (click)="changeSort('total')" class="sortable text-right col-calculated-header" id="th-total">
+                    Total
+                    <span class="sort-icon" *ngIf="sortField() === 'total'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('cotacaoDia')" class="sortable text-right" id="th-cotacaodia">
+                    Cotação do Dia
+                    <span class="sort-icon" *ngIf="sortField() === 'cotacaoDia'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('valor')" class="sortable text-right col-calculated-header" id="th-valor">
+                    Valor
+                    <span class="sort-icon" *ngIf="sortField() === 'valor'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
+                  <th (click)="changeSort('variacao')" class="sortable text-right col-calculated-header"
+                    id="th-variacao">
+                    Variação (%)
+                    <span class="sort-icon" *ngIf="sortField() === 'variacao'">{{ sortAsc() ? '▲' : '▼' }}</span>
+                  </th>
 
-        <!-- Add Stock Button -->
-        <button id="btn-add-asset" class="btn btn-primary" (click)="openAddModal()">
-          ✚ Adicionar Ativo
-        </button>
-      </div>
-    </section>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
 
-    <!-- Table Container -->
-    <section class="table-container card animate-fade-in">
-      <div class="table-scroll">
-        <table id="portfolio-table" class="portfolio-table">
-          <thead>
-            <tr>
-              <th (click)="changeSort('ticker')" class="sortable" id="th-ticker">
-                Ticker 
-                <span class="sort-icon" *ngIf="sortField() === 'ticker'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('empresa')" class="sortable" id="th-empresa">
-                Empresa
-                <span class="sort-icon" *ngIf="sortField() === 'empresa'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('dataCompra')" class="sortable text-center" id="th-datacompra">
-                Data da Compra
-                <span class="sort-icon" *ngIf="sortField() === 'dataCompra'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('quantidade')" class="sortable text-right" id="th-quantidade">
-                QT
-                <span class="sort-icon" *ngIf="sortField() === 'quantidade'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('precoCompra')" class="sortable text-right" id="th-precocompra">
-                PU (Compra)
-                <span class="sort-icon" *ngIf="sortField() === 'precoCompra'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              
-              <!-- Calculated Columns (Blue Highlighted) -->
-              <th (click)="changeSort('total')" class="sortable text-right col-calculated-header" id="th-total">
-                Total
-                <span class="sort-icon" *ngIf="sortField() === 'total'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('cotacaoDia')" class="sortable text-right" id="th-cotacaodia">
-                Cotação do Dia
-                <span class="sort-icon" *ngIf="sortField() === 'cotacaoDia'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('valor')" class="sortable text-right col-calculated-header" id="th-valor">
-                Valor
-                <span class="sort-icon" *ngIf="sortField() === 'valor'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              <th (click)="changeSort('variacao')" class="sortable text-right col-calculated-header" id="th-variacao">
-                Variação (%)
-                <span class="sort-icon" *ngIf="sortField() === 'variacao'">{{ sortAsc() ? '▲' : '▼' }}</span>
-              </th>
-              
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
-          
-          <tbody>
-            <tr *ngFor="let item of filteredAndSortedStocks()" class="table-row">
-              <!-- Core Data -->
-              <td class="font-semibold">{{ item.ticker }}</td>
-              <td>{{ item.empresa }}</td>
-              <td class="text-center">{{ item.dataCompra | date:'dd/MM/yyyy' }}</td>
-              <td class="text-right">{{ item.quantidade }}</td>
-              <td class="text-right">{{ item.precoCompra | currency:'USD':'symbol':'1.2-2':'pt-PT' }}</td>
-              
-              <!-- Calculated Data (Blue background/tinted columns) -->
-              <td class="text-right col-calculated-cell font-semibold">
-                {{ (item.quantidade * item.precoCompra) | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-              </td>
-              <td class="text-right font-medium">
-                {{ (item.cotacaoDia ?? item.precoCompra) | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-              </td>
-              <td class="text-right col-calculated-cell font-semibold">
-                {{ (item.quantidade * (item.cotacaoDia ?? item.precoCompra)) | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-              </td>
-              <td class="text-right col-calculated-cell font-bold" [ngClass]="{
+              <tbody>
+                <tr *ngFor="let item of filteredAndSortedStocks()" class="table-row">
+                  <!-- Core Data -->
+                  <td class="font-semibold">{{ item.ticker }}</td>
+                  <td>{{ item.empresa }}</td>
+                  <td class="text-center">{{ item.dataCompra | date:'dd/MM/yyyy' }}</td>
+                  <td class="text-right">{{ item.quantidade }}</td>
+                  <td class="text-right">{{ item.precoCompra | currency:'USD':'symbol':'1.2-2':'pt-PT' }}</td>
+
+                  <!-- Calculated Data (Blue background/tinted columns) -->
+                  <td class="text-right col-calculated-cell font-semibold">
+                    {{ (item.quantidade * item.precoCompra) | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+                  </td>
+                  <td class="text-right font-medium">
+                    {{ (item.cotacaoDia ?? item.precoCompra) | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+                  </td>
+                  <td class="text-right col-calculated-cell font-semibold">
+                    {{ (item.quantidade * (item.cotacaoDia ?? item.precoCompra)) |
+                    currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+                  </td>
+                  <td class="text-right col-calculated-cell font-bold" [ngClass]="{
                 'text-success': item.variacao !== undefined && item.variacao > 0,
                 'text-danger': item.variacao !== undefined && item.variacao < 0,
                 'text-neutral': item.variacao !== undefined && item.variacao === 0
               }">
-                <span *ngIf="item.variacao !== undefined">
-                  {{ item.variacao > 0 ? '+' : '' }}{{ item.variacao | number:'1.2-2':'pt-PT' }}%
-                </span>
-                <span *ngIf="item.variacao === undefined">-</span>
-              </td>
-              
-              <!-- Action Controls -->
-              <td class="text-center">
-                <div class="row-actions">
-                  <button class="btn-row btn-row-edit" (click)="openEditModal(item)" title="Editar Ativo">✏️</button>
-                  <button class="btn-row btn-row-delete" (click)="handleDeleteStock(item)" title="Excluir Ativo">🗑️</button>
-                </div>
-              </td>
-            </tr>
+                    <span *ngIf="item.variacao !== undefined">
+                      {{ item.variacao > 0 ? '+' : '' }}{{ item.variacao | number:'1.2-2':'pt-PT' }}%
+                    </span>
+                    <span *ngIf="item.variacao === undefined">-</span>
+                  </td>
 
-            <tr *ngIf="filteredAndSortedStocks().length === 0">
-              <td colspan="10" class="empty-table text-center text-muted-custom">
-                Nenhum ativo encontrado na carteira. Adicione um novo ou importe um ficheiro JSON.
-              </td>
-            </tr>
-          </tbody>
-          
-          <!-- Bottom Total Row (Green Highlighted) -->
-          <tfoot *ngIf="filteredAndSortedStocks().length > 0">
-            <tr class="row-total-green">
-              <td colspan="3" class="font-bold text-center">TOTAL</td>
-              <td></td>
-              <td></td>
-              <!-- Calculated Sum of totals (Green column cell) -->
-              <td class="text-right font-bold text-success-cell">
-                {{ portfolioService.totals().totalInvestido | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-              </td>
-              <td></td>
-              <!-- Calculated Sum of current values (Green column cell) -->
-              <td class="text-right font-bold text-success-cell">
-                {{ portfolioService.totals().valorAtual | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
-              </td>
-              <!-- Calculated Overall variation percentage (Green column cell) -->
-              <td class="text-right font-bold text-success-cell" [ngClass]="{
+                  <!-- Action Controls -->
+                  <td class="text-center">
+                    <div class="row-actions">
+                      <button class="btn-row btn-row-edit" (click)="openEditModal(item)"
+                        title="Editar Ativo">✏️</button>
+                      <button class="btn-row btn-row-delete" (click)="handleDeleteStock(item)"
+                        title="Excluir Ativo">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="filteredAndSortedStocks().length === 0">
+                  <td colspan="10" class="empty-table text-center text-muted-custom">
+                    Nenhum ativo encontrado na carteira. Adicione um novo ou importe um ficheiro JSON.
+                  </td>
+                </tr>
+              </tbody>
+
+              <!-- Bottom Total Row (Green Highlighted) -->
+              <tfoot *ngIf="filteredAndSortedStocks().length > 0">
+                <tr class="row-total-green">
+                  <td colspan="3" class="font-bold text-center">TOTAL</td>
+                  <td></td>
+                  <td></td>
+                  <!-- Calculated Sum of totals (Green column cell) -->
+                  <td class="text-right font-bold text-success-cell">
+                    {{ portfolioService.totals().totalInvestido | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+                  </td>
+                  <td></td>
+                  <!-- Calculated Sum of current values (Green column cell) -->
+                  <td class="text-right font-bold text-success-cell">
+                    {{ portfolioService.totals().valorAtual | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+                  </td>
+                  <!-- Calculated Overall variation percentage (Green column cell) -->
+                  <td class="text-right font-bold text-success-cell" [ngClass]="{
                 'text-success': portfolioService.totals().variacaoTotal > 0,
                 'text-danger': portfolioService.totals().variacaoTotal < 0,
                 'text-neutral': portfolioService.totals().variacaoTotal === 0
               }">
-                {{ portfolioService.totals().variacaoTotal > 0 ? '+' : '' }}{{ portfolioService.totals().variacaoTotal | number:'1.2-2':'pt-PT' }}%
-              </td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+                    {{ portfolioService.totals().variacaoTotal > 0 ? '+' : '' }}{{
+                    portfolioService.totals().variacaoTotal | number:'1.2-2':'pt-PT' }}%
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
 
-      <!-- Last Updated Info -->
-      <div class="table-footer-info" *ngIf="portfolioService.lastUpdated() as d">
-        Última atualização de cotações: {{ d | date:'dd/MM/yyyy HH:mm:ss' }}
-      </div>
-    </section>
+          <!-- Last Updated Info -->
+          <div class="table-footer-info" *ngIf="portfolioService.lastUpdated() as d">
+            Última atualização de cotações: {{ d | date:'dd/MM/yyyy HH:mm:ss' }}
+          </div>
+        </section>
+      </div> <!-- End main-panel -->
+
+      <!-- RIGHT PANEL: INSIGHTS & STATS -->
+      <aside class="insights-panel">
+
+        <!-- Stat Card 1 -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Capital Investido</span>
+            <span class="stat-icon">💰</span>
+          </div>
+          <div class="stat-value">{{ portfolioService.totals().totalInvestido | currency:'USD':'symbol':'1.2-2':'pt-PT'
+            }}</div>
+        </div>
+
+        <!-- Stat Card 2 -->
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-title">Valor Atual</span>
+            <span class="stat-icon">📈</span>
+          </div>
+          <div class="stat-value">{{ portfolioService.totals().valorAtual | currency:'USD':'symbol':'1.2-2':'pt-PT' }}
+          </div>
+        </div>
+
+        <!-- Allocation Card -->
+        <div class="stat-card allocation-card">
+          <div class="stat-header">
+            <span class="stat-title">Diversificação</span>
+            <span class="stat-icon">🍰</span>
+          </div>
+
+          <div class="allocation-bar-wrapper">
+            <div class="stacked-bar" *ngIf="chartAllocation().length > 0; else noAllocation">
+              <div *ngFor="let item of chartAllocation()" [style.width.%]="item.percentage"
+                [style.backgroundColor]="item.color"
+                [title]="item.ticker + ': ' + (item.percentage | number:'1.1-1') + '%'" class="bar-slice">
+              </div>
+            </div>
+            <ng-template #noAllocation>
+              <div class="empty-bar text-muted-custom">Vazio.</div>
+            </ng-template>
+          </div>
+
+          <div class="allocation-legend" *ngIf="chartAllocation().length > 0">
+            <div *ngFor="let item of chartAllocation().slice(0, 5)" class="legend-item">
+              <span class="legend-dot" [style.backgroundColor]="item.color"></span>
+              <span class="legend-label">{{ item.ticker }}</span>
+              <span class="legend-value">{{ item.percentage | number:'1.0-0' }}%</span>
+            </div>
+          </div>
+        </div>
+
+      </aside> <!-- End insights-panel -->
+    </div> <!-- End dashboard-split -->
+
   </main>
+</div> <!-- End app-layout -->
 
-  <!-- Footer Info -->
-  <footer class="app-footer text-muted-custom">
-    <p>StockFolio &copy; 2026. Desenvolvido para a unidade de PW II com Angular e REST API.</p>
-  </footer>
+<!-- ================= MODALS ================= -->
 
-  <!-- ================= MODALS ================= -->
-
-  <!-- 1. Add Stock Modal -->
-  <div class="modal-overlay" *ngIf="showAddModal()">
-    <div class="modal-card animate-fade-in">
-      <div class="modal-header">
-        <h2>Adicionar Novo Ativo</h2>
-        <button class="btn-close" (click)="closeAddModal()">×</button>
-      </div>
-      
-      <form (submit)="handleAddStock(); $event.preventDefault()">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="add-ticker">Ticker (ex: MSFT, TSLA, AAPL)*</label>
-            <input id="add-ticker" type="text" [(ngModel)]="newTicker" name="ticker" placeholder="ex: MSFT" required autofocus>
-          </div>
-          
-          <div class="form-group">
-            <label for="add-empresa">Nome da Empresa*</label>
-            <input id="add-empresa" type="text" [(ngModel)]="newEmpresa" name="empresa" placeholder="ex: Microsoft Corporation" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="add-data">Data de Compra*</label>
-            <input id="add-data" type="date" [(ngModel)]="newDataCompra" name="dataCompra" required>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="add-quantidade">Quantidade*</label>
-              <input id="add-quantidade" type="number" [(ngModel)]="newQuantidade" name="quantidade" placeholder="ex: 20" min="1" step="any" required>
-            </div>
-            
-            <div class="form-group">
-              <label for="add-preco">Preço Unitário (USD)*</label>
-              <input id="add-preco" type="number" [(ngModel)]="newPrecoCompra" name="precoCompra" placeholder="ex: 320.00" min="0.01" step="any" required>
-            </div>
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeAddModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Adicionar</button>
-        </div>
-      </form>
+<!-- 1. Add Stock Modal -->
+<div class="modal-overlay" *ngIf="showAddModal()">
+  <div class="modal-card animate-fade-in">
+    <div class="modal-header">
+      <h2>Adicionar Novo Ativo</h2>
+      <button class="btn-close" (click)="closeAddModal()">×</button>
     </div>
-  </div>
 
-  <!-- 2. Edit Stock Modal -->
-  <div class="modal-overlay" *ngIf="showEditModal()">
-    <div class="modal-card animate-fade-in">
-      <div class="modal-header">
-        <h2>Editar Ativo</h2>
-        <button class="btn-close" (click)="closeEditModal()">×</button>
+    <form (submit)="handleAddStock(); $event.preventDefault()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="add-ticker">Ticker (ex: MSFT, TSLA, AAPL)*</label>
+          <input id="add-ticker" type="text" [(ngModel)]="newTicker" name="ticker" placeholder="ex: MSFT" required
+            autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="add-empresa">Nome da Empresa*</label>
+          <input id="add-empresa" type="text" [(ngModel)]="newEmpresa" name="empresa"
+            placeholder="ex: Microsoft Corporation" required>
+        </div>
+
+        <div class="form-group">
+          <label for="add-data">Data de Compra*</label>
+          <input id="add-data" type="date" [(ngModel)]="newDataCompra" name="dataCompra" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="add-quantidade">Quantidade*</label>
+            <input id="add-quantidade" type="number" [(ngModel)]="newQuantidade" name="quantidade" placeholder="ex: 20"
+              min="1" step="any" required>
+          </div>
+
+          <div class="form-group">
+            <label for="add-preco">Preço Unitário (USD)*</label>
+            <input id="add-preco" type="number" [(ngModel)]="newPrecoCompra" name="precoCompra" placeholder="ex: 320.00"
+              min="0.01" step="any" required>
+          </div>
+        </div>
       </div>
-      
-      <form (submit)="handleEditStock(); $event.preventDefault()">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="edit-ticker">Ticker*</label>
-            <input id="edit-ticker" type="text" [(ngModel)]="editTicker" name="ticker" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="edit-empresa">Nome da Empresa*</label>
-            <input id="edit-empresa" type="text" [(ngModel)]="editEmpresa" name="empresa" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="edit-data">Data de Compra*</label>
-            <input id="edit-data" type="date" [(ngModel)]="editDataCompra" name="dataCompra" required>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="edit-quantidade">Quantidade*</label>
-              <input id="edit-quantidade" type="number" [(ngModel)]="editQuantidade" name="quantidade" min="1" step="any" required>
-            </div>
-            
-            <div class="form-group">
-              <label for="edit-preco">Preço Unitário (USD)*</label>
-              <input id="edit-preco" type="number" [(ngModel)]="editPrecoCompra" name="precoCompra" min="0.01" step="any" required>
-            </div>
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeEditModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
-  <!-- 3. Settings Modal -->
-  <div class="modal-overlay" *ngIf="showSettingsModal()">
-    <div class="modal-card animate-fade-in">
-      <div class="modal-header">
-        <h2>Configurações do Sistema</h2>
-        <button class="btn-close" (click)="closeSettingsModal()">×</button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeAddModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Adicionar</button>
       </div>
-      
-      <form (submit)="handleSaveSettings(); $event.preventDefault()">
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="settings-mode">Modo de Cotação</label>
-            <select id="settings-mode" [(ngModel)]="configIsDemo" name="isDemo" class="form-select">
-              <option [ngValue]="true">Modo Simulação (Demo / Fallback)</option>
-              <option [ngValue]="false">REST API Real-Time (Finnhub API)</option>
-            </select>
-            <small class="form-help text-muted-custom">
-              O modo Simulação utiliza valores dinâmicos locais baseados nos requisitos do trabalho (MSFT=330, TSLA=224). O modo API Real realiza chamadas à API REST Finnhub.
-            </small>
-          </div>
-          
-          <div class="form-group" *ngIf="!configIsDemo">
-            <label for="settings-key">Chave de API Finnhub (token)</label>
-            <input id="settings-key" type="password" [(ngModel)]="configApiKey" name="apiKey" placeholder="Insira a sua chave do finnhub.io...">
-            <small class="form-help text-muted-custom">
-              Obtenha uma chave gratuita registando-se em <a href="https://finnhub.io/" target="_blank" rel="noopener">finnhub.io</a>.
-            </small>
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline" (click)="closeSettingsModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar Configurações</button>
-        </div>
-      </form>
-    </div>
+    </form>
   </div>
+</div>
 
+<!-- 2. Edit Stock Modal -->
+<div class="modal-overlay" *ngIf="showEditModal()">
+  <div class="modal-card animate-fade-in">
+    <div class="modal-header">
+      <h2>Editar Ativo</h2>
+      <button class="btn-close" (click)="closeEditModal()">×</button>
+    </div>
+
+    <form (submit)="handleEditStock(); $event.preventDefault()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-ticker">Ticker*</label>
+          <input id="edit-ticker" type="text" [(ngModel)]="editTicker" name="ticker" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-empresa">Nome da Empresa*</label>
+          <input id="edit-empresa" type="text" [(ngModel)]="editEmpresa" name="empresa" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-data">Data de Compra*</label>
+          <input id="edit-data" type="date" [(ngModel)]="editDataCompra" name="dataCompra" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-quantidade">Quantidade*</label>
+            <input id="edit-quantidade" type="number" [(ngModel)]="editQuantidade" name="quantidade" min="1" step="any"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-preco">Preço Unitário (USD)*</label>
+            <input id="edit-preco" type="number" [(ngModel)]="editPrecoCompra" name="precoCompra" min="0.01" step="any"
+              required>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeEditModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 3. Settings Modal -->
+<div class="modal-overlay" *ngIf="showSettingsModal()">
+  <div class="modal-card animate-fade-in">
+    <div class="modal-header">
+      <h2>Configurações do Sistema</h2>
+      <button class="btn-close" (click)="closeSettingsModal()">×</button>
+    </div>
+
+    <form (submit)="handleSaveSettings(); $event.preventDefault()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="settings-mode">Modo de Cotação</label>
+          <select id="settings-mode" [(ngModel)]="configIsDemo" name="isDemo" class="form-select">
+            <option [ngValue]="true">Modo Simulação (Demo / Fallback)</option>
+            <option [ngValue]="false">REST API Real-Time (Finnhub API)</option>
+          </select>
+          <small class="form-help text-muted-custom">
+            O modo Simulação utiliza valores dinâmicos locais baseados nos requisitos do trabalho (MSFT=330, TSLA=224).
+            O modo API Real realiza chamadas à API REST Finnhub.
+          </small>
+        </div>
+
+        <div class="form-group" *ngIf="!configIsDemo">
+          <label for="settings-key">Chave de API Finnhub (token)</label>
+          <input id="settings-key" type="password" [(ngModel)]="configApiKey" name="apiKey"
+            placeholder="Insira a sua chave do finnhub.io...">
+          <small class="form-help text-muted-custom">
+            Obtenha uma chave gratuita registando-se em <a href="https://finnhub.io/" target="_blank"
+              rel="noopener">finnhub.io</a>.
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeSettingsModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+      </div>
+    </form>
+  </div>
 </div>

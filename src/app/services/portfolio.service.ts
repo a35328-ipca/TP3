@@ -1,7 +1,8 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { StockApiService } from './stock-api.service';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 
 export interface StockItem {
   id: string;
@@ -10,7 +11,7 @@ export interface StockItem {
   dataCompra: string;
   quantidade: number;
   precoCompra: number;
-  // Calculated values (nullable until loaded/calculated)
+  // Valores calculados (vindos das cotações, não guardados na BD)
   cotacaoDia?: number;
   total?: number;
   valor?: number;
@@ -21,98 +22,104 @@ export interface StockItem {
   providedIn: 'root'
 })
 export class PortfolioService {
-  // Main state: array of stocks
+  private readonly API = '/api/portfolio';
+
+  // Estado principal: lista de ativos
   private readonly _stocks = signal<StockItem[]>([]);
-  
-  // Loading status signal
+
+  // Estado de carregamento
   isLoading = signal<boolean>(false);
-  
-  // Last update timestamp
+
+  // Timestamp da última atualização de cotações
   lastUpdated = signal<Date | null>(null);
 
-  // Expose read-only stocks signal
+  // Erro de backend (para mostrar aviso na UI se a API falhar)
+  backendError = signal<boolean>(false);
+
+  // Exposição read-only da lista
   stocks = computed(() => this._stocks());
 
-  // Calculated totals for the entire portfolio
+  // Totais calculados reativamente
   totals = computed(() => {
     const list = this._stocks();
     let totalInvestido = 0;
     let valorAtual = 0;
 
     list.forEach(item => {
-      const itemTotal = item.quantidade * item.precoCompra;
-      const itemValor = item.quantidade * (item.cotacaoDia ?? item.precoCompra);
-      totalInvestido += itemTotal;
-      valorAtual += itemValor;
+      totalInvestido += item.quantidade * item.precoCompra;
+      valorAtual += item.quantidade * (item.cotacaoDia ?? item.precoCompra);
     });
 
-    const variacaoTotal = totalInvestido > 0 
-      ? ((valorAtual - totalInvestido) / totalInvestido) * 100 
+    const variacaoTotal = totalInvestido > 0
+      ? ((valorAtual - totalInvestido) / totalInvestido) * 100
       : 0;
 
-    return {
-      totalInvestido,
-      valorAtual,
-      variacaoTotal
-    };
+    return { totalInvestido, valorAtual, variacaoTotal };
   });
 
-  constructor(private stockApi: StockApiService) {
-    this.loadInitialData();
+  constructor(
+    private http: HttpClient,
+    private stockApi: StockApiService
+  ) {
+    this.loadFromApi();
   }
 
-  /**
-   * Loads initial data: checks localStorage, and if empty, loads from public/portfolio.json or uses default values.
-   */
-  private async loadInitialData() {
-    const stored = localStorage.getItem('portfolio_stocks');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as StockItem[];
-        this._stocks.set(parsed);
-        this.refreshQuotes();
-        return;
-      } catch (e) {
-        console.error('Failed to parse portfolio from localStorage, resetting...', e);
-      }
-    }
+  // ─────────────────────────────────────────────────────
+  // Carrega a carteira completa da API REST (base de dados)
+  // ─────────────────────────────────────────────────────
+  loadFromApi() {
+    this.isLoading.set(true);
+    this.backendError.set(false);
 
-    // Default fallback (similar to the JSON we wrote in public/portfolio.json)
-    const defaultStocks: StockItem[] = [
-      {
-        id: '1',
-        ticker: 'MSFT',
-        empresa: 'Microsoft',
-        dataCompra: '2026-03-01',
-        quantidade: 20,
-        precoCompra: 320.00
-      },
-      {
-        id: '2',
-        ticker: 'TSLA',
-        empresa: 'TESLA',
-        dataCompra: '2026-03-20',
-        quantidade: 50,
-        precoCompra: 220.00
+    this.http.get<StockItem[]>(this.API).pipe(
+      catchError(err => {
+        console.error('⚠️ Backend indisponível, a usar localStorage como fallback:', err);
+        this.backendError.set(true);
+        // Fallback: localStorage → dados padrão
+        const stored = localStorage.getItem('portfolio_stocks');
+        const fallback: StockItem[] = stored ? JSON.parse(stored) : this.getDefaultStocks();
+        return of(fallback);
+      })
+    ).subscribe(stocks => {
+      if (stocks.length === 0 && !this.backendError()) {
+        // BD vazia e backend disponível → semear dados padrão
+        this.seedDefaultsToBackend();
+      } else {
+        this._stocks.set(stocks);
+        this.isLoading.set(false);
+        this.refreshQuotes();
       }
+    });
+  }
+
+  // ─────────────────────────────────────────────────────
+  // Semeia os ativos padrão na base de dados (BD vazia)
+  // ─────────────────────────────────────────────────────
+  private seedDefaultsToBackend() {
+    const defaults = [
+      { ticker: 'MSFT', empresa: 'Microsoft', dataCompra: '2026-03-01', quantidade: 20, precoCompra: 320.00 },
+      { ticker: 'TSLA', empresa: 'TESLA',     dataCompra: '2026-03-20', quantidade: 50, precoCompra: 220.00 }
     ];
 
-    this._stocks.set(defaultStocks);
-    this.saveToLocalStorage();
-    this.refreshQuotes();
+    this.http.post<{ message: string; data: StockItem[] }>(`${this.API}/import`, defaults).subscribe({
+      next: result => {
+        this._stocks.set(result.data);
+        this.isLoading.set(false);
+        this.refreshQuotes();
+        console.log('✅ Dados padrão semeados na base de dados SQLite.');
+      },
+      error: err => {
+        console.error('Erro ao semear dados padrão:', err);
+        this._stocks.set(this.getDefaultStocks());
+        this.isLoading.set(false);
+        this.refreshQuotes();
+      }
+    });
   }
 
-  saveToLocalStorage() {
-    // Save only core fields to local storage, quotes are fetched dynamically
-    const cleanList = this._stocks().map(({ id, ticker, empresa, dataCompra, quantidade, precoCompra }) => ({
-      id, ticker, empresa, dataCompra, quantidade, precoCompra
-    }));
-    localStorage.setItem('portfolio_stocks', JSON.stringify(cleanList));
-  }
-
-  /**
-   * Refreshes current quotes for all stocks from the StockApiService
-   */
+  // ─────────────────────────────────────────────────────
+  // Atualiza cotações para todos os ativos
+  // ─────────────────────────────────────────────────────
   refreshQuotes() {
     const currentList = this._stocks();
     if (currentList.length === 0) {
@@ -122,9 +129,9 @@ export class PortfolioService {
 
     this.isLoading.set(true);
 
-    const requests = currentList.map(item => 
+    const requests = currentList.map(item =>
       this.stockApi.getQuote(item.ticker, item.precoCompra).pipe(
-        catchError(() => of(item.precoCompra)) // fallback to purchase price on failure
+        catchError(() => of(item.precoCompra))
       )
     );
 
@@ -134,60 +141,122 @@ export class PortfolioService {
           const cotacaoDia = quotes[idx];
           const total = item.quantidade * item.precoCompra;
           const valor = item.quantidade * cotacaoDia;
-          const variacao = item.precoCompra > 0 
-            ? ((cotacaoDia - item.precoCompra) / item.precoCompra) * 100 
+          const variacao = item.precoCompra > 0
+            ? ((cotacaoDia - item.precoCompra) / item.precoCompra) * 100
             : 0;
-
-          return {
-            ...item,
-            cotacaoDia,
-            total,
-            valor,
-            variacao
-          };
+          return { ...item, cotacaoDia, total, valor, variacao };
         });
-
         this._stocks.set(updated);
         this.lastUpdated.set(new Date());
         this.isLoading.set(false);
+
+        // Guardar também em localStorage como cache/fallback
+        this.saveToLocalStorage(updated);
       },
       error: (err) => {
-        console.error('Failed to refresh portfolio quotes:', err);
+        console.error('Erro ao atualizar cotações:', err);
         this.isLoading.set(false);
       }
     });
   }
 
-  addStock(stock: Omit<StockItem, 'id' | 'cotacaoDia' | 'total' | 'valor' | 'variacao'>) {
-    const newStock: StockItem = {
+  // ─────────────────────────────────────────────────────
+  // Adicionar novo ativo (POST → base de dados)
+  // ─────────────────────────────────────────────────────
+  addStock(stock: Omit<StockItem, 'id' | 'cotacaoDia' | 'total' | 'valor' | 'variacao'>): Promise<void> {
+    const payload = {
       ...stock,
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
       ticker: stock.ticker.trim().toUpperCase()
     };
 
-    this._stocks.update(prev => [...prev, newStock]);
-    this.saveToLocalStorage();
-    this.refreshQuotes();
+    return new Promise((resolve, reject) => {
+      this.http.post<StockItem>(this.API, payload).pipe(
+        catchError(err => {
+          // Fallback: adicionar localmente se o backend estiver em baixo
+          console.warn('Backend em baixo — a guardar localmente:', err);
+          const local: StockItem = {
+            ...payload,
+            id: crypto.randomUUID()
+          };
+          this._stocks.update(prev => [...prev, local]);
+          this.saveToLocalStorage(this._stocks());
+          this.refreshQuotes();
+          resolve();
+          return of(null);
+        }),
+        switchMap(created => {
+          if (created) {
+            this._stocks.update(prev => [...prev, created]);
+            this.saveToLocalStorage(this._stocks());
+            this.refreshQuotes();
+            resolve();
+          }
+          return of(null);
+        })
+      ).subscribe({ error: reject });
+    });
   }
 
-  updateStock(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
-    this._stocks.update(prev => 
-      prev.map(item => item.id === id ? { ...item, ...updatedFields } : item)
-    );
-    this.saveToLocalStorage();
-    this.refreshQuotes();
+  // ─────────────────────────────────────────────────────
+  // Atualizar ativo existente (PUT → base de dados)
+  // ─────────────────────────────────────────────────────
+  updateStock(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.http.put<StockItem>(`${this.API}/${id}`, updatedFields).pipe(
+        catchError(err => {
+          // Fallback local
+          console.warn('Backend em baixo — a atualizar localmente:', err);
+          this._stocks.update(prev =>
+            prev.map(item => item.id === id ? { ...item, ...updatedFields } : item)
+          );
+          this.saveToLocalStorage(this._stocks());
+          this.refreshQuotes();
+          resolve();
+          return of(null);
+        }),
+        switchMap(updated => {
+          if (updated) {
+            this._stocks.update(prev =>
+              prev.map(item => item.id === id ? { ...item, ...updated } : item)
+            );
+            this.saveToLocalStorage(this._stocks());
+            this.refreshQuotes();
+            resolve();
+          }
+          return of(null);
+        })
+      ).subscribe({ error: reject });
+    });
   }
 
-  deleteStock(id: string) {
-    this._stocks.update(prev => prev.filter(item => item.id !== id));
-    this.saveToLocalStorage();
-    // No need to refresh API quotes since we only removed a row, but let's update values
-    this.saveToLocalStorage();
+  // ─────────────────────────────────────────────────────
+  // Remover ativo (DELETE → base de dados)
+  // ─────────────────────────────────────────────────────
+  deleteStock(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.http.delete(`${this.API}/${id}`).pipe(
+        catchError(err => {
+          // Fallback local
+          console.warn('Backend em baixo — a remover localmente:', err);
+          this._stocks.update(prev => prev.filter(item => item.id !== id));
+          this.saveToLocalStorage(this._stocks());
+          resolve();
+          return of(null);
+        })
+      ).subscribe({
+        next: () => {
+          this._stocks.update(prev => prev.filter(item => item.id !== id));
+          this.saveToLocalStorage(this._stocks());
+          resolve();
+        },
+        error: reject
+      });
+    });
   }
 
-  /**
-   * Imports portfolio from a JSON file.
-   */
+  // ─────────────────────────────────────────────────────
+  // Importar carteira a partir de ficheiro JSON
+  // ─────────────────────────────────────────────────────
   async loadFromJsonFile(file: File): Promise<void> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -195,19 +264,16 @@ export class PortfolioService {
         try {
           const content = e.target?.result as string;
           const parsed = JSON.parse(content);
-          
+
           if (!Array.isArray(parsed)) {
-            throw new Error('JSON format is invalid. Must be an array of stocks.');
+            throw new Error('O ficheiro JSON deve conter um array de ativos.');
           }
 
-          // Validate and map elements
-          const mapped: StockItem[] = parsed.map((item: any, index: number) => {
-            if (!item.ticker || !item.quantidade || !item.precoCompra) {
-              throw new Error(`Item at position ${index + 1} is missing required fields (ticker, quantidade, precoCompra).`);
+          const mapped = parsed.map((item: any, index: number) => {
+            if (!item.ticker || item.quantidade == null || item.precoCompra == null) {
+              throw new Error(`Item na posição ${index + 1} tem campos obrigatórios em falta.`);
             }
-            
             return {
-              id: item.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9)),
               ticker: String(item.ticker).trim().toUpperCase(),
               empresa: String(item.empresa || item.ticker).trim(),
               dataCompra: item.dataCompra || new Date().toISOString().split('T')[0],
@@ -216,33 +282,86 @@ export class PortfolioService {
             };
           });
 
-          this._stocks.set(mapped);
-          this.saveToLocalStorage();
-          this.refreshQuotes();
-          resolve();
+          // Enviar para o backend (endpoint de importação em massa)
+          this.http.post<{ message: string; data: StockItem[] }>(`${this.API}/import`, mapped).pipe(
+            catchError(err => {
+              // Fallback local
+              console.warn('Backend em baixo — importação local:', err);
+              const localStocks: StockItem[] = mapped.map((s: any) => ({
+                ...s,
+                id: crypto.randomUUID()
+              }));
+              this._stocks.set(localStocks);
+              this.saveToLocalStorage(localStocks);
+              this.refreshQuotes();
+              resolve();
+              return of(null);
+            })
+          ).subscribe({
+            next: (result) => {
+              if (result) {
+                this._stocks.set(result.data);
+                this.saveToLocalStorage(result.data);
+                this.refreshQuotes();
+                resolve();
+              }
+            },
+            error: reject
+          });
         } catch (err: any) {
           reject(err);
         }
       };
-      reader.onerror = () => reject(new Error('Failed to read file.'));
+      reader.onerror = () => reject(new Error('Erro ao ler o ficheiro.'));
       reader.readAsText(file);
     });
   }
 
-  /**
-   * Exports the current portfolio to a JSON file.
-   */
+  // ─────────────────────────────────────────────────────
+  // Exportar carteira para ficheiro JSON
+  // ─────────────────────────────────────────────────────
   exportToJson() {
     const list = this._stocks().map(({ ticker, empresa, dataCompra, quantidade, precoCompra }) => ({
       ticker, empresa, dataCompra, quantidade, precoCompra
     }));
-    
+
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(list, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', 'portfolio.json');
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    document.body.removeChild(downloadAnchor);
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    a.setAttribute('download', 'portfolio.json');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // ─────────────────────────────────────────────────────
+  // Helpers privados
+  // ─────────────────────────────────────────────────────
+  private saveToLocalStorage(stocks: StockItem[]) {
+    const clean = stocks.map(({ id, ticker, empresa, dataCompra, quantidade, precoCompra }) => ({
+      id, ticker, empresa, dataCompra, quantidade, precoCompra
+    }));
+    localStorage.setItem('portfolio_stocks', JSON.stringify(clean));
+  }
+
+  private getDefaultStocks(): StockItem[] {
+    return [
+      {
+        id: crypto.randomUUID(),
+        ticker: 'MSFT',
+        empresa: 'Microsoft',
+        dataCompra: '2026-03-01',
+        quantidade: 20,
+        precoCompra: 320.00
+      },
+      {
+        id: crypto.randomUUID(),
+        ticker: 'TSLA',
+        empresa: 'TESLA',
+        dataCompra: '2026-03-20',
+        quantidade: 50,
+        precoCompra: 220.00
+      }
+    ];
   }
 }

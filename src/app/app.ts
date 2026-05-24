@@ -205,7 +205,7 @@ export class App implements OnInit {
     this.showAddModal.set(false);
   }
 
-  protected handleAddStock() {
+  protected async handleAddStock() {
     if (!this.newTicker || !this.newEmpresa || !this.newDataCompra || this.newQuantidade === null || this.newPrecoCompra === null) {
       this.showToast('Por favor, preencha todos os campos obrigatórios.', 'error');
       return;
@@ -216,16 +216,21 @@ export class App implements OnInit {
       return;
     }
 
-    this.portfolioService.addStock({
-      ticker: this.newTicker,
-      empresa: this.newEmpresa,
-      dataCompra: this.newDataCompra,
-      quantidade: this.newQuantidade,
-      precoCompra: this.newPrecoCompra
-    });
-
+    const ticker = this.newTicker.toUpperCase();
     this.closeAddModal();
-    this.showToast(`Ação ${this.newTicker.toUpperCase()} adicionada com sucesso!`);
+
+    try {
+      await this.portfolioService.addStock({
+        ticker: this.newTicker,
+        empresa: this.newEmpresa,
+        dataCompra: this.newDataCompra,
+        quantidade: this.newQuantidade,
+        precoCompra: this.newPrecoCompra
+      });
+      this.showToast(`Ação ${ticker} adicionada e guardada na base de dados!`);
+    } catch (err) {
+      this.showToast(`Erro ao adicionar ativo: ${err}`, 'error');
+    }
   }
 
   protected openEditModal(stock: StockItem) {
@@ -242,7 +247,7 @@ export class App implements OnInit {
     this.showEditModal.set(false);
   }
 
-  protected handleEditStock() {
+  protected async handleEditStock() {
     if (!this.editTicker || !this.editEmpresa || !this.editDataCompra || this.editQuantidade === null || this.editPrecoCompra === null) {
       this.showToast('Por favor, preencha todos os campos.', 'error');
       return;
@@ -253,22 +258,31 @@ export class App implements OnInit {
       return;
     }
 
-    this.portfolioService.updateStock(this.editingId, {
-      ticker: this.editTicker,
-      empresa: this.editEmpresa,
-      dataCompra: this.editDataCompra,
-      quantidade: this.editQuantidade,
-      precoCompra: this.editPrecoCompra
-    });
-
+    const ticker = this.editTicker.toUpperCase();
     this.closeEditModal();
-    this.showToast(`Ação ${this.editTicker.toUpperCase()} atualizada com sucesso!`);
+
+    try {
+      await this.portfolioService.updateStock(this.editingId, {
+        ticker: this.editTicker,
+        empresa: this.editEmpresa,
+        dataCompra: this.editDataCompra,
+        quantidade: this.editQuantidade,
+        precoCompra: this.editPrecoCompra
+      });
+      this.showToast(`Ação ${ticker} atualizada e guardada na base de dados!`);
+    } catch (err) {
+      this.showToast(`Erro ao atualizar ativo: ${err}`, 'error');
+    }
   }
 
-  protected handleDeleteStock(stock: StockItem) {
+  protected async handleDeleteStock(stock: StockItem) {
     if (confirm(`Tem a certeza que deseja remover ${stock.ticker} (${stock.empresa}) da sua carteira?`)) {
-      this.portfolioService.deleteStock(stock.id);
-      this.showToast(`Ação ${stock.ticker} removida com sucesso!`);
+      try {
+        await this.portfolioService.deleteStock(stock.id);
+        this.showToast(`Ação ${stock.ticker} removida com sucesso!`);
+      } catch (err) {
+        this.showToast(`Erro ao remover ativo: ${err}`, 'error');
+      }
     }
   }
 

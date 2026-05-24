@@ -1,85 +1,84 @@
-/* --- DESIGN SYSTEM & CSS VARIABLES --- */
+/* --- DESIGN SYSTEM & CSS VARIABLES (GABRIEL AÇÕES) --- */
 :root {
   /* Fonts */
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-title: 'Outfit', var(--font-sans);
+  --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
+  --font-title: 'Poppins', var(--font-sans);
 
   /* Color Palette - Default Dark Theme */
-  --bg-primary: #0b0f19;
-  --bg-secondary: #131a2e;
-  --bg-tertiary: #1e2942;
-  --bg-card: rgba(19, 26, 46, 0.7);
+  --bg-primary: #121212;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #242424;
+  --bg-card: #1e1e1e;
   
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #e0e0e0;
+  --text-secondary: #9e9e9e;
+  --text-muted: #757575;
   
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(99, 102, 241, 0.4);
+  --border-color: #333333;
+  --border-focus: #ffb300;
   
-  --accent: #6366f1; /* Indigo */
-  --accent-hover: #4f46e5;
-  --accent-glow: rgba(99, 102, 241, 0.25);
+  --accent: #ffb300; /* Amber/Gold */
+  --accent-hover: #ff8f00;
+  --accent-glow: rgba(255, 179, 0, 0.25);
   
   /* Financial States */
-  --success: #10b981; /* Emerald Green */
-  --success-bg: rgba(16, 185, 129, 0.1);
-  --success-glow: rgba(16, 185, 129, 0.2);
+  --success: #43a047; /* Flat Green */
+  --success-bg: rgba(67, 160, 71, 0.1);
+  --success-glow: rgba(67, 160, 71, 0.2);
 
-  --danger: #ef4444; /* Rose Red */
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --danger-glow: rgba(239, 68, 68, 0.2);
+  --danger: #e53935; /* Flat Red */
+  --danger-bg: rgba(229, 57, 53, 0.1);
+  --danger-glow: rgba(229, 57, 53, 0.2);
   
-  --neutral-zero: #94a3b8;
+  --neutral-zero: #9e9e9e;
   
-  /* Calculated Highlights (Blue/Green as required) */
-  --calc-blue: #0ea5e9; /* Sky Blue */
-  --calc-blue-bg: rgba(14, 165, 233, 0.04);
-  --calc-blue-header: rgba(14, 165, 233, 0.1);
+  /* Calculated Highlights */
+  --calc-blue: #ffb300; /* Replaced with Gold */
+  --calc-blue-bg: rgba(255, 179, 0, 0.05);
+  --calc-blue-header: rgba(255, 179, 0, 0.1);
   
-  --calc-green-bg: rgba(16, 185, 129, 0.06);
-  --calc-green-header: rgba(16, 185, 129, 0.15);
+  --calc-green-bg: rgba(67, 160, 71, 0.05);
+  --calc-green-header: rgba(67, 160, 71, 0.1);
 
   /* FX & Borders */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.4);
-  --glass-blur: blur(16px);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.7);
+  --glass-blur: none; /* Removed glassmorphism */
+  --transition: all 0.2s ease-in-out;
 }
 
 /* Light Theme Variables */
 body.light-theme {
-  --bg-primary: #f8fafc;
+  --bg-primary: #f5f7fa;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-tertiary: #eef1f5;
+  --bg-card: #ffffff;
   
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #212121;
+  --text-secondary: #616161;
+  --text-muted: #9e9e9e;
   
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-focus: rgba(99, 102, 241, 0.6);
+  --border-color: #e0e0e0;
+  --border-focus: #1976d2;
   
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-glow: rgba(79, 70, 229, 0.15);
+  --accent: #1976d2; /* Corporate Blue */
+  --accent-hover: #1565c0;
+  --accent-glow: rgba(25, 118, 210, 0.2);
   
-  --success-bg: rgba(16, 185, 129, 0.08);
-  --danger-bg: rgba(239, 68, 68, 0.08);
+  --calc-blue: #1976d2;
+  --calc-blue-bg: rgba(25, 118, 210, 0.04);
+  --calc-blue-header: rgba(25, 118, 210, 0.08);
   
-  --calc-blue-bg: rgba(14, 165, 233, 0.03);
-  --calc-blue-header: rgba(14, 165, 233, 0.08);
+  --calc-green-bg: rgba(67, 160, 71, 0.06);
+  --calc-green-header: rgba(67, 160, 71, 0.12);
   
-  --calc-green-bg: rgba(16, 185, 129, 0.04);
-  --calc-green-header: rgba(16, 185, 129, 0.08);
-  
-  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* --- RESET & BASIC STYLES --- */
@@ -176,4 +175,32 @@ h1, h2, h3, h4, h5, h6 {
 /* Form controls reset */
 input, select, textarea, button {
   font-family: inherit;
+}
+
+/* --- SLIDE-IN ANIMATION --- */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slideInLeft 0.35s ease-out forwards;
+}
+
+/* --- EXTRA UTILITIES --- */
+.text-warning {
+  color: #ffb300 !important;
+}
+
+/* Fix body so sidebar fills full height */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Thin, elegant scrollbar for sidebar and main */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
