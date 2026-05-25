@@ -490,7 +490,6 @@
 
 /* --- PORTFOLIO TABLE --- */
 .table-container {
-  overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -511,13 +510,14 @@
 }
 
 .portfolio-table th {
-  padding: 10px 8px;
+  padding: 18px 24px;
   font-weight: 600;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
 }
 
 .portfolio-table th.sortable {
@@ -535,9 +535,10 @@
 }
 
 .portfolio-table td {
-  padding: 10px 8px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border-color);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  white-space: nowrap;
 }
 
 .table-row {
@@ -617,28 +618,71 @@ body.light-theme .table-row:hover {
   padding: 48px !important;
 }
 
-/* Row Actions */
-.row-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
+/* Action Menu (3 Dots) */
+.action-menu-container {
+  position: relative;
+  display: inline-block;
 }
 
-.btn-row {
+.btn-dots {
   background: transparent;
   border: none;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
   cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  line-height: 1;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
   transition: var(--transition);
 }
 
-.btn-row:hover {
-  transform: scale(1.2);
+.btn-dots:hover {
+  color: var(--text-primary);
   background-color: var(--bg-tertiary);
+}
+
+.action-dropdown {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 8px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: none;
+  flex-direction: column;
+  min-width: 120px;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.action-menu-container:hover .action-dropdown,
+.action-menu-container:focus-within .action-dropdown {
+  display: flex;
+}
+
+.btn-dropdown {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-dropdown:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.btn-dropdown-danger {
+  color: var(--danger);
+}
+
+.btn-dropdown-danger:hover {
+  background-color: var(--danger-bg);
 }
 
 /* --- TOAST NOTIFICATIONS --- */

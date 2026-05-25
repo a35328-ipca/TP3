@@ -147,7 +147,7 @@
                     <span class="sort-icon" *ngIf="sortField() === 'variacao'">{{ sortAsc() ? '▲' : '▼' }}</span>
                   </th>
 
-                  <th class="text-center">Ações</th>
+                  <th class="text-center" style="width: 40px;"></th>
                 </tr>
               </thead>
 
@@ -183,12 +183,13 @@
                   </td>
 
                   <!-- Action Controls -->
-                  <td class="text-center">
-                    <div class="row-actions">
-                      <button class="btn-row btn-row-edit" (click)="openEditModal(item)"
-                        title="Editar Ativo">✏️</button>
-                      <button class="btn-row btn-row-delete" (click)="handleDeleteStock(item)"
-                        title="Excluir Ativo">🗑️</button>
+                  <td class="text-center" style="overflow: visible;">
+                    <div class="action-menu-container">
+                      <button class="btn-dots" title="Opções">⋮</button>
+                      <div class="action-dropdown">
+                        <button class="btn-dropdown" (click)="openEditModal(item)">✏️ Editar</button>
+                        <button class="btn-dropdown btn-dropdown-danger" (click)="handleDeleteStock(item)">🗑️ Eliminar</button>
+                      </div>
                     </div>
                   </td>
                 </tr>
