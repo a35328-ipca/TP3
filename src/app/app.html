@@ -7,7 +7,7 @@
       <span class="logo-icon">💼</span>
       <div class="brand-text">
         <h1 id="app-heading-main">Gabriel Ações</h1>
-        <span class="subtitle">Fintech Dashboard</span>
+        <span class="subtitle">Plataforma de Trading</span>
       </div>
     </div>
 
@@ -24,7 +24,7 @@
 
     <nav class="sidebar-nav">
       <button id="btn-add-asset" class="btn-sidebar btn-add" (click)="openAddModal()">
-        ✚ Novo Ativo
+        🛒 Comprar Ações
       </button>
 
       <label for="file-upload" class="btn-sidebar" id="btn-import-label">
@@ -99,7 +99,7 @@
       <div class="main-panel">
         <div class="panel-header">
           <h2>Posições Abertas</h2>
-          <span class="item-count">{{ filteredAndSortedStocks().length }} ativos</span>
+          <span class="item-count">{{ filteredAndSortedStocks().length }} ações</span>
         </div>
 
         <section class="table-container card">
@@ -116,7 +116,7 @@
                     <span class="sort-icon" *ngIf="sortField() === 'empresa'">{{ sortAsc() ? '▲' : '▼' }}</span>
                   </th>
                   <th (click)="changeSort('dataCompra')" class="sortable text-center" id="th-datacompra">
-                    Data da Compra
+                    Data da Ordem
                     <span class="sort-icon" *ngIf="sortField() === 'dataCompra'">{{ sortAsc() ? '▲' : '▼' }}</span>
                   </th>
                   <th (click)="changeSort('quantidade')" class="sortable text-right" id="th-quantidade">
@@ -187,8 +187,8 @@
                     <div class="action-menu-container">
                       <button class="btn-dots" title="Opções">⋮</button>
                       <div class="action-dropdown">
-                        <button class="btn-dropdown" (click)="openEditModal(item)">✏️ Editar</button>
-                        <button class="btn-dropdown btn-dropdown-danger" (click)="handleDeleteStock(item)">🗑️ Eliminar</button>
+                        <button class="btn-dropdown" (click)="openEditModal(item)">💰 Vender (Ajustar)</button>
+                        <button class="btn-dropdown btn-dropdown-danger" (click)="handleDeleteStock(item)">❌ Fechar Posição</button>
                       </div>
                     </div>
                   </td>
@@ -196,7 +196,7 @@
 
                 <tr *ngIf="filteredAndSortedStocks().length === 0">
                   <td colspan="10" class="empty-table text-center text-muted-custom">
-                    Nenhum ativo encontrado na carteira. Adicione um novo ou importe um ficheiro JSON.
+                    Nenhuma ação em carteira. Execute uma ordem de compra ou importe dados.
                   </td>
                 </tr>
               </tbody>
@@ -301,7 +301,7 @@
 <div class="modal-overlay" *ngIf="showAddModal()">
   <div class="modal-card animate-fade-in">
     <div class="modal-header">
-      <h2>Adicionar Novo Ativo</h2>
+      <h2>Ordem de Compra</h2>
       <button class="btn-close" (click)="closeAddModal()">×</button>
     </div>
 
@@ -341,7 +341,7 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" (click)="closeAddModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Adicionar</button>
+        <button type="submit" class="btn btn-primary">Comprar</button>
       </div>
     </form>
   </div>
@@ -351,7 +351,7 @@
 <div class="modal-overlay" *ngIf="showEditModal()">
   <div class="modal-card animate-fade-in">
     <div class="modal-header">
-      <h2>Editar Ativo</h2>
+      <h2>Vender / Ajustar Posição</h2>
       <button class="btn-close" (click)="closeEditModal()">×</button>
     </div>
 
