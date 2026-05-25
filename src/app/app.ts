@@ -35,13 +35,15 @@ export class App implements OnInit {
   protected newQuantidade: number | null = null;
   protected newPrecoCompra: number | null = null;
 
-  // Form States (Edit)
+  // Form States (Edit / Sell)
   protected editingId = '';
   protected editTicker = '';
   protected editEmpresa = '';
   protected editDataCompra = '';
   protected editQuantidade: number | null = null;
   protected editPrecoCompra: number | null = null;
+  protected originalQuantidade: number | null = null;
+  protected originalPrecoCompra: number | null = null;
 
   // Form States (Settings)
   protected configApiKey = '';
@@ -201,6 +203,22 @@ export class App implements OnInit {
     this.showAddModal.set(true);
   }
 
+  protected onTickerChange(ticker: string) {
+    const uppercaseTicker = ticker.toUpperCase();
+    const companies: Record<string, string> = {
+      'AAPL': 'Apple Inc.',
+      'MSFT': 'Microsoft Corporation',
+      'TSLA': 'Tesla Inc.',
+      'GOOGL': 'Alphabet Inc.',
+      'AMZN': 'Amazon.com Inc.',
+      'NVDA': 'NVIDIA Corporation',
+      'META': 'Meta Platforms Inc.'
+    };
+    if (companies[uppercaseTicker]) {
+      this.newEmpresa = companies[uppercaseTicker];
+    }
+  }
+
   protected closeAddModal() {
     this.showAddModal.set(false);
   }
@@ -238,8 +256,12 @@ export class App implements OnInit {
     this.editTicker = stock.ticker;
     this.editEmpresa = stock.empresa;
     this.editDataCompra = stock.dataCompra;
-    this.editQuantidade = stock.quantidade;
-    this.editPrecoCompra = stock.precoCompra;
+    this.originalQuantidade = stock.quantidade;
+    this.originalPrecoCompra = stock.precoCompra;
+    
+    // Reset inputs for selling
+    this.editQuantidade = null; 
+    this.editPrecoCompra = stock.cotacaoDia ?? stock.precoCompra; 
     this.showEditModal.set(true);
   }
 
@@ -248,8 +270,8 @@ export class App implements OnInit {
   }
 
   protected async handleEditStock() {
-    if (!this.editTicker || !this.editEmpresa || !this.editDataCompra || this.editQuantidade === null || this.editPrecoCompra === null) {
-      this.showToast('Por favor, preencha todos os campos.', 'error');
+    if (this.editQuantidade === null || this.editPrecoCompra === null) {
+      this.showToast('Por favor, preencha a quantidade e preço de venda.', 'error');
       return;
     }
 
@@ -261,17 +283,27 @@ export class App implements OnInit {
     const ticker = this.editTicker.toUpperCase();
     this.closeEditModal();
 
+    const qtyToSell = this.editQuantidade;
+    const finalQty = this.originalQuantidade! - qtyToSell;
+
     try {
-      await this.portfolioService.updateStock(this.editingId, {
-        ticker: this.editTicker,
-        empresa: this.editEmpresa,
-        dataCompra: this.editDataCompra,
-        quantidade: this.editQuantidade,
-        precoCompra: this.editPrecoCompra
-      });
-      this.showToast(`Ação ${ticker} atualizada e guardada na base de dados!`);
+      if (finalQty <= 0) {
+        // Fechar Posição
+        await this.portfolioService.deleteStock(this.editingId);
+        this.showToast(`Posição de ${ticker} fechada com sucesso!`);
+      } else {
+        // Ajustar Posição / Venda Parcial
+        await this.portfolioService.updateStock(this.editingId, {
+          ticker: this.editTicker,
+          empresa: this.editEmpresa,
+          dataCompra: this.editDataCompra,
+          quantidade: finalQty,
+          precoCompra: this.originalPrecoCompra! // Mantém preço de compra original
+        });
+        this.showToast(`Venda de ${qtyToSell} ações de ${ticker} registada com sucesso!`);
+      }
     } catch (err) {
-      this.showToast(`Erro ao atualizar ativo: ${err}`, 'error');
+      this.showToast(`Erro ao registar venda: ${err}`, 'error');
     }
   }
 

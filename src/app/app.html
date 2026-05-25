@@ -308,15 +308,23 @@
     <form (submit)="handleAddStock(); $event.preventDefault()">
       <div class="modal-body">
         <div class="form-group">
-          <label for="add-ticker">Ticker (ex: MSFT, TSLA, AAPL)*</label>
-          <input id="add-ticker" type="text" [(ngModel)]="newTicker" name="ticker" placeholder="ex: MSFT" required
-            autofocus>
+          <label for="add-ticker">Ticker (Selecione ou digite)*</label>
+          <input id="add-ticker" type="text" [(ngModel)]="newTicker" (ngModelChange)="onTickerChange($event)" name="ticker" list="stock-options" placeholder="ex: AAPL" required autofocus autocomplete="off">
+          <datalist id="stock-options">
+            <option value="AAPL">Apple Inc.</option>
+            <option value="MSFT">Microsoft Corporation</option>
+            <option value="TSLA">Tesla Inc.</option>
+            <option value="GOOGL">Alphabet Inc.</option>
+            <option value="AMZN">Amazon.com Inc.</option>
+            <option value="NVDA">NVIDIA Corporation</option>
+            <option value="META">Meta Platforms Inc.</option>
+          </datalist>
         </div>
 
         <div class="form-group">
           <label for="add-empresa">Nome da Empresa*</label>
           <input id="add-empresa" type="text" [(ngModel)]="newEmpresa" name="empresa"
-            placeholder="ex: Microsoft Corporation" required>
+            placeholder="ex: Apple Inc." required>
         </div>
 
         <div class="form-group">
@@ -347,49 +355,43 @@
   </div>
 </div>
 
-<!-- 2. Edit Stock Modal -->
+<!-- 2. Sell Stock Modal -->
 <div class="modal-overlay" *ngIf="showEditModal()">
   <div class="modal-card animate-fade-in">
     <div class="modal-header">
-      <h2>Vender / Ajustar Posição</h2>
+      <h2>Vender Ações</h2>
       <button class="btn-close" (click)="closeEditModal()">×</button>
     </div>
 
     <form (submit)="handleEditStock(); $event.preventDefault()">
       <div class="modal-body">
         <div class="form-group">
-          <label for="edit-ticker">Ticker*</label>
-          <input id="edit-ticker" type="text" [(ngModel)]="editTicker" name="ticker" required>
-        </div>
-
-        <div class="form-group">
-          <label for="edit-empresa">Nome da Empresa*</label>
-          <input id="edit-empresa" type="text" [(ngModel)]="editEmpresa" name="empresa" required>
-        </div>
-
-        <div class="form-group">
-          <label for="edit-data">Data de Compra*</label>
-          <input id="edit-data" type="date" [(ngModel)]="editDataCompra" name="dataCompra" required>
+          <label for="edit-ticker">Ativo a Vender</label>
+          <input id="edit-ticker" type="text" [value]="editTicker + ' - ' + editEmpresa" disabled class="form-control-disabled">
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="edit-quantidade">Quantidade*</label>
+            <label for="edit-quantidade">Quantidade a Vender*</label>
             <input id="edit-quantidade" type="number" [(ngModel)]="editQuantidade" name="quantidade" min="1" step="any"
-              required>
+              placeholder="Ex: 5" required>
           </div>
 
           <div class="form-group">
-            <label for="edit-preco">Preço Unitário (USD)*</label>
+            <label for="edit-preco">Preço de Venda Unitário (USD)*</label>
             <input id="edit-preco" type="number" [(ngModel)]="editPrecoCompra" name="precoCompra" min="0.01" step="any"
               required>
           </div>
         </div>
+        
+        <small class="form-help text-muted-custom">
+          Nota: Vender uma quantidade igual ou superior ao saldo atual irá fechar completamente a posição.
+        </small>
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" (click)="closeEditModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        <button type="submit" class="btn btn-primary">Confirmar Venda</button>
       </div>
     </form>
   </div>
