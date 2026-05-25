@@ -284,6 +284,12 @@ export class App implements OnInit {
     this.closeEditModal();
 
     const qtyToSell = this.editQuantidade;
+    
+    if (qtyToSell > this.originalQuantidade!) {
+      this.showToast(`Não pode vender mais ações do que as que possui na carteira (${this.originalQuantidade}).`, 'error');
+      return;
+    }
+
     const finalQty = this.originalQuantidade! - qtyToSell;
 
     try {
